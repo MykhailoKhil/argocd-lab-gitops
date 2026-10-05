@@ -1,10 +1,21 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-- ../../base
+  - ../../base
 images:
-- name: ghcr.io/mykhailokhil/demo-api
-  newTag: sha-68dd077
+  - name: ghcr.io/mykhailokhil/demo-api
+    newTag: sha-68dd077  # dev: Image Updater (T12); staging/prod: promotion PR (T13)
 replicas:
-- count: 1
-  name: demo-api
+  - name: demo-api
+    count: 1
+patches:
+  - target:
+      kind: Ingress
+      name: demo-api
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: demo-dev.localtest.me
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: demo-dev.localtest.me

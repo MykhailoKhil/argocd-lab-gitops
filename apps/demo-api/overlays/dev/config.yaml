@@ -1,5 +1,4 @@
 # Read by the ApplicationSet in clusters/mgmt/apps.yaml (not a Kubernetes manifest).
-# T05: change cluster to "workload" once the workload cluster is registered.
 cluster: workload
 namespace: demo-dev
 autoSync: true

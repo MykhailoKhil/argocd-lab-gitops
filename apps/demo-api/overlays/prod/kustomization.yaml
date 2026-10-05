@@ -2,9 +2,30 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ../../base
+  - pdb.yaml   # prod only: keep 2 of 3 pods during node drains / upgrades
 images:
   - name: ghcr.io/mykhailokhil/demo-api
-    newTag: sha-68dd077  # dev: bumped by Image Updater (T12); staging/prod: by promotion PR (T13)
+    newTag: sha-68dd077  # dev: Image Updater (T12); staging/prod: promotion PR (T13)
 replicas:
   - name: demo-api
     count: 3
+patches:
+  - target:
+      kind: Ingress
+      name: demo-api
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: demo.localtest.me
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: demo.localtest.me
+  - target:
+      kind: Deployment
+      name: demo-api
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests: { cpu: 100m, memory: 64Mi }
+          limits: { memory: 128Mi }
