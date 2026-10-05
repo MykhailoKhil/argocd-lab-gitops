@@ -41,6 +41,17 @@ spec:
         grafana:
           adminPassword: admin   # lab only; moves to a sealed/external secret in T09
           defaultDashboardsTimezone: browser
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            annotations:
+              cert-manager.io/cluster-issuer: lab-ca   # the workload cluster's own lab-ca
+            hosts:
+              - grafana.localtest.me
+            tls:
+              - secretName: grafana-tls
+                hosts:
+                  - grafana.localtest.me
           additionalDataSources:
             - name: Loki
               type: loki
