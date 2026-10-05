@@ -1,12 +1,20 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-labels:
-  - pairs:
-      app.kubernetes.io/name: demo-api
-    includeSelectors: true   # reaches Service selectors; the Rollout sets its own
+# No global "labels:" transformer: it would also stamp app.kubernetes.io/name=demo-api on the
+# k6 pods, and then the Rollout, the PodDisruptionBudget and the Services would select them too.
+# Selectors are written out explicitly in each file instead.
 resources:
   - rollout.yaml
   - services.yaml
   - traffic.yaml
   - podmonitor.yaml
   - analysis.yaml
+  - k6-load.yaml
+configMapGenerator:
+  - name: demo-api-k6
+    files:
+      - k6/load.js
+      - k6/canary-check.js
+generatorOptions:
+  # fixed name: the AnalysisTemplate Job references it and kustomize can't rewrite names there
+  disableNameSuffixHash: true

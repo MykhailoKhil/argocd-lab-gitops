@@ -41,3 +41,29 @@ spec:
             histogram_quantile(0.95,
               sum by (le) (rate(http_request_duration_seconds_bucket{namespace="{{args.namespace}}",rollouts_pod_template_hash="{{args.canary-hash}}"}[1m]))
             )
+    - name: k6-canary
+      # T16: one 60s k6 run against the canary Service with pass/fail thresholds
+      count: 1
+      initialDelay: 15s
+      provider:
+        job:
+          spec:
+            backoffLimit: 0
+            ttlSecondsAfterFinished: 600
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                  - name: k6
+                    image: grafana/k6:2.3.0
+                    args: ["run", "/scripts/canary-check.js"]
+                    env:
+                      - name: TARGET
+                        value: http://demo-api-canary.{{args.namespace}}.svc
+                    volumeMounts:
+                      - name: scripts
+                        mountPath: /scripts
+                volumes:
+                  - name: scripts
+                    configMap:
+                      name: demo-api-k6

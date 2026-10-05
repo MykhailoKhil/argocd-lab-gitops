@@ -34,3 +34,10 @@ patches:
       - op: replace
         path: /spec/dnsNames/0
         value: demo.localtest.me
+  - target:
+      kind: Deployment
+      name: k6-load
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/env/0/value
+        value: demo.localtest.me
