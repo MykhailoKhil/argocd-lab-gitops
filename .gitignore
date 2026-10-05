@@ -4,3 +4,4 @@
 # never commit plain secrets; use sealed/external secrets (T09)
 *secret*.yaml
 !*sealed*secret*.yaml
+*.crt
