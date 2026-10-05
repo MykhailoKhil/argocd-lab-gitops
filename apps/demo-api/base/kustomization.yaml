@@ -9,3 +9,4 @@ resources:
   - services.yaml
   - traffic.yaml
   - podmonitor.yaml
+  - analysis.yaml

@@ -54,4 +54,17 @@ spec:
         - pause: { duration: 60s }
         - setWeight: 80
         - pause: { duration: 30s }
-      # T15: analysis (Prometheus error rate + p95 latency) is added here
+      # T15: background analysis from the first step until the rollout completes.
+      # Any failed metric aborts the rollout: traffic goes back to stable at once.
+      analysis:
+        startingStep: 1          # after setWeight: 20, i.e. once the canary gets traffic
+        templates:
+          - templateName: demo-api-health
+        args:
+          - name: namespace
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: canary-hash
+            valueFrom:
+              podTemplateHashValue: Latest

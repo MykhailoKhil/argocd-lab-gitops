@@ -1,0 +1,43 @@
+# T15: what "healthy" means for a demo-api release, measured on the CANARY pods only.
+# Series carry rollouts_pod_template_hash thanks to podTargetLabels in podmonitor.yaml,
+# so the canary's own traffic is separated from the stable version's.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: demo-api-health
+spec:
+  args:
+    - name: namespace
+    - name: canary-hash
+  metrics:
+    - name: error-rate
+      # share of 5xx among all requests to the canary, over the last minute
+      interval: 30s
+      initialDelay: 30s          # let rate() windows fill with canary traffic first
+      failureLimit: 1            # 2 bad measurements -> abort and roll back
+      # no traffic yet -> no series -> treat as OK (T16 adds steady k6 load)
+      successCondition: len(result) == 0 || result[0] < 0.01
+      provider:
+        prometheus:
+          address: http://kps-prometheus.monitoring.svc:9090
+          query: |
+            (
+              sum(rate(http_requests_total{namespace="{{args.namespace}}",rollouts_pod_template_hash="{{args.canary-hash}}",code=~"5.."}[1m]))
+              or vector(0)
+            )
+            /
+            clamp_min(sum(rate(http_requests_total{namespace="{{args.namespace}}",rollouts_pod_template_hash="{{args.canary-hash}}"}[1m])), 0.001)
+    - name: latency-p95
+      # 95th percentile latency of the canary, in seconds
+      interval: 30s
+      initialDelay: 30s
+      failureLimit: 1
+      # NaN = histogram has no samples in the window (no traffic): not a failure by itself
+      successCondition: len(result) == 0 || isNaN(result[0]) || result[0] < 0.3
+      provider:
+        prometheus:
+          address: http://kps-prometheus.monitoring.svc:9090
+          query: |
+            histogram_quantile(0.95,
+              sum by (le) (rate(http_request_duration_seconds_bucket{namespace="{{args.namespace}}",rollouts_pod_template_hash="{{args.canary-hash}}"}[1m]))
+            )

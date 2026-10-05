@@ -32,7 +32,17 @@ spec:
       syncPolicy:
         syncOptions:
           - CreateNamespace=true
-  # prod is synced manually (promotion via PR, T13); dev and staging auto-sync.
+          # Apps use CRDs installed by platform apps (Rollout, TraefikService, PodMonitor,
+          # Certificate). On a fresh cluster those may not exist yet: don't fail the dry run,
+          # retry until the platform catches up.
+          - SkipDryRunOnMissingResource=true
+        retry:
+          limit: 10
+          backoff:
+            duration: 15s
+            factor: 2
+            maxDuration: 5m
+  # autoSync comes from overlays/<env>/config.yaml (all envs auto-sync since T13).
   templatePatch: |
     {{- if .autoSync }}
     spec:
