@@ -11,6 +11,7 @@ spec:
   sourceRepos:
     - https://github.com/MykhailoKhil/argocd-lab-gitops.git
     - https://argoproj.github.io/argo-helm
+    - https://charts.jetstack.io
   destinations:
     - server: '*'
       namespace: '*'

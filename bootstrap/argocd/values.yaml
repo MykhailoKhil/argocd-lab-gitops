@@ -27,3 +27,11 @@ applicationSet:
 
 server:
   replicas: 1
+  # T07: HTTPS via k3s' built-in Traefik + a certificate from our self-signed CA.
+  # argocd.localtest.me resolves to 127.0.0.1, no /etc/hosts edits needed.
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: lab-ca
+    tls: true   # cert-manager writes the cert into secret argocd-server-tls

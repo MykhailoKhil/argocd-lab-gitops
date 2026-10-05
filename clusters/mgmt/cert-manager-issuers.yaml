@@ -1,0 +1,33 @@
+# T07: the self-signed CA chain. Separate app because its resources are cert-manager CRDs.
+#
+# Note: sync waves in the root app do NOT wait for the cert-manager app to become healthy
+# (Argo CD does not assess child Application health by default). So on a fresh cluster this
+# app may try to sync before the CRDs exist. SkipDryRunOnMissingResource + retry handles it.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager-issuers
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/MykhailoKhil/argocd-lab-gitops.git
+    targetRevision: main
+    path: platform/cert-manager-issuers
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
