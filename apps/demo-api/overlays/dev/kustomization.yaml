@@ -4,7 +4,7 @@ resources:
   - ../../base
 images:
   - name: ghcr.io/mykhailokhil/demo-api
-    newTag: sha-0000000   # dev: bumped by Image Updater (T12); staging/prod: by promotion PR (T13)
+    newTag: sha256:b41bd517e5843ef924117786da12404d2683d2c79374d9bb73c67115479b16f3   # dev: bumped by Image Updater (T12); staging/prod: by promotion PR (T13)
 replicas:
   - name: demo-api
     count: 1
