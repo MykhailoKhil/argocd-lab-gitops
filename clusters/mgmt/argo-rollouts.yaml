@@ -18,6 +18,14 @@ spec:
       valuesObject:
         dashboard:
           enabled: true        # kubectl -n argo-rollouts port-forward svc/argo-rollouts-dashboard 3100:3100
+        # T24: notifications. Built-in triggers (on-rollout-aborted, on-rollout-completed, ...)
+        # are subscribed per Rollout with an annotation (apps/demo-api/base/rollout.yaml).
+        notifications:
+          secret:
+            create: false     # Secret argo-rollouts-notification-secret comes from Vault via ESO
+          notifiers:
+            service.telegram: |
+              token: $telegram-token
         controller:
           metrics:
             enabled: true

@@ -5,6 +5,11 @@ apiVersion: argoproj.io/v1alpha1
 kind: Rollout
 metadata:
   name: demo-api
+  annotations:
+    # T24: Telegram message when a canary is aborted (auto-rollback) or completes.
+    # Replace TELEGRAM_CHAT_ID, see docs/t24-notifications.md
+    notifications.argoproj.io/subscribe.on-rollout-aborted.telegram: TELEGRAM_CHAT_ID
+    notifications.argoproj.io/subscribe.on-rollout-completed.telegram: TELEGRAM_CHAT_ID
 spec:
   replicas: 1
   revisionHistoryLimit: 3

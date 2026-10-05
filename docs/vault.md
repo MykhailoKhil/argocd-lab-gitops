@@ -93,3 +93,10 @@ v kv put secret/argocd/image-updater-git username=MykhailoKhil password=<github_
 ```
 
 ESO turns it into Secret `argocd/git-creds` (platform/image-updater/git-creds.yaml).
+
+## T23/T24: more secrets
+
+```bash
+v kv put secret/argocd/dex-github clientID=<id> clientSecret=<secret>     # t22-t23-access.md
+v kv put secret/notifications/telegram token=<bot token>                  # t24-notifications.md
+```

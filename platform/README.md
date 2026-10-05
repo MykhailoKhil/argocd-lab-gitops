@@ -9,3 +9,7 @@ Cluster add-ons managed by Argo CD. Empty on purpose: filled in during
 - T14: Argo Rollouts on workload (`clusters/mgmt/argo-rollouts.yaml`); demo-api is a Rollout with Traefik weighted canary
 
 Each component gets an Application in `clusters/mgmt/` (project `platform`) that points here or at an upstream Helm chart.
+- T19: custom Lua health check for TraefikService (bootstrap/argocd/values.yaml), docs/t19-broken.md
+- T22/T23: RBAC roles, local account alice, GitHub SSO via Dex (secret from Vault), docs/t22-t23-access.md
+- T24: Telegram notifications from Argo CD and Argo Rollouts, docs/t24-notifications.md
+- T25: `argocd-metrics/`: NodePorts so Prometheus on workload scrapes Argo CD on mgmt; alerts + dashboard in kube-prometheus-stack.yaml

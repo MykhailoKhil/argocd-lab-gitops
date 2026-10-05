@@ -1,0 +1,19 @@
+# T25: NodePort Services for Argo CD metrics (platform/argocd-metrics).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-metrics
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/MykhailoKhil/argocd-lab-gitops.git
+    targetRevision: main
+    path: platform/argocd-metrics
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

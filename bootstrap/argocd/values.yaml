@@ -13,14 +13,98 @@ configs:
     # Track resources by annotation instead of label: avoids clashes with Helm/other tools.
     application.resourceTrackingMethod: annotation
     timeout.reconciliation: 60s
+    # T23: external URL, needed for the SSO callback (port 8443 = mgmt Traefik, see README)
+    url: https://argocd.localtest.me:8443
+    # T22: a local, non-admin account for the "team" scenario (password: argocd account update-password --account alice)
+    accounts.alice: login
+    # T23: GitHub login through Dex. Client ID/secret come from Vault via ESO
+    # (Secret argocd/argocd-dex-github, label app.kubernetes.io/part-of=argocd).
+    dex.config: |
+      connectors:
+        - type: github
+          id: github
+          name: GitHub
+          config:
+            clientID: $argocd-dex-github:clientID
+            clientSecret: $argocd-dex-github:clientSecret
+    # T19: custom health check for a CRD Argo CD knows nothing about.
+    # A TraefikService with no backend services can never route traffic -> Degraded.
+    resource.customizations.health.traefik.io_TraefikService: |
+      hs = {}
+      local services = {}
+      if obj.spec ~= nil and obj.spec.weighted ~= nil and obj.spec.weighted.services ~= nil then
+        services = obj.spec.weighted.services
+      end
+      if #services == 0 then
+        hs.status = "Degraded"
+        hs.message = "TraefikService has no backend services"
+      else
+        hs.status = "Healthy"
+        hs.message = #services .. " backend service(s)"
+      end
+      return hs
   rbac:
     policy.default: role:readonly
+    # T23: match SSO users by their GitHub login (Dex puts it in preferred_username)
+    scopes: '[groups, preferred_username]'
+    # T22: who may do what.
+    #  - role:apps-dev: see every app in project "apps", sync/restart only *-dev, read logs.
+    #    No access at all to project "platform" (default readonly is overridden by deny).
+    policy.csv: |
+      p, role:apps-dev, applications, get,    apps/*,     allow
+      p, role:apps-dev, applications, sync,   apps/*-dev, allow
+      p, role:apps-dev, applications, action/argoproj.io/Rollout/*, apps/*-dev, allow
+      p, role:apps-dev, logs,         get,    apps/*,     allow
+      p, role:apps-dev, applications, get,    platform/*, deny
+      p, role:apps-dev, projects,     get,    platform,   deny
+      g, alice, role:apps-dev
+      g, MykhailoKhil, role:admin
 
 dex:
-  enabled: false   # SSO comes in T23
+  enabled: true    # T23
 
 notifications:
-  enabled: true    # triggers/templates are configured in T24
+  enabled: true
+  # T24: the bot token comes from Vault via ESO (Secret argocd/argocd-notifications-secret)
+  secret:
+    create: false
+  notifiers:
+    service.telegram: |
+      token: $telegram-token
+  # every app subscribes to these triggers. Replace TELEGRAM_CHAT_ID (see docs/t24-notifications.md).
+  subscriptions:
+    - recipients:
+        - telegram:TELEGRAM_CHAT_ID
+      triggers:
+        - on-deployed
+        - on-sync-failed
+        - on-health-degraded
+  templates:
+    template.app-deployed: |
+      message: |
+        ✅ {{.app.metadata.name}} deployed
+        revision {{.app.status.sync.revision | trunc 7}}, health {{.app.status.health.status}}
+    template.app-sync-failed: |
+      message: |
+        ❌ {{.app.metadata.name}} sync {{.app.status.operationState.phase}}
+        {{.app.status.operationState.message}}
+    template.app-health-degraded: |
+      message: |
+        ⚠️ {{.app.metadata.name}} is Degraded
+  triggers:
+    trigger.on-deployed: |
+      - description: synced and healthy, once per git revision
+        oncePer: app.status.sync.revision
+        send: [app-deployed]
+        when: app.status.operationState != nil and app.status.operationState.phase in ['Succeeded'] and app.status.health.status == 'Healthy'
+    trigger.on-sync-failed: |
+      - description: sync failed
+        send: [app-sync-failed]
+        when: app.status.operationState != nil and app.status.operationState.phase in ['Error', 'Failed']
+    trigger.on-health-degraded: |
+      - description: app health became Degraded
+        send: [app-health-degraded]
+        when: app.status.health.status == 'Degraded'
 
 applicationSet:
   replicas: 1

@@ -3,3 +3,5 @@ kind: Kustomization
 resources:
   - cluster-secret-store.yaml
   - cluster-workload.yaml
+  - argocd-dex-github.yaml
+  - argocd-notifications-secret.yaml

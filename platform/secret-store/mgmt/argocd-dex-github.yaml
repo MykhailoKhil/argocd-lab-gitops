@@ -1,0 +1,22 @@
+# T23: GitHub OAuth app credentials for Dex (Vault: secret/argocd/dex-github clientID, clientSecret).
+# The part-of label is required: Argo CD only resolves "$secret:key" references in secrets carrying it.
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: argocd-dex-github
+  namespace: argocd
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault
+  target:
+    name: argocd-dex-github
+    creationPolicy: Owner
+    template:
+      metadata:
+        labels:
+          app.kubernetes.io/part-of: argocd
+  dataFrom:
+    - extract:
+        key: argocd/dex-github

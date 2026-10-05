@@ -32,13 +32,66 @@ spec:
             serviceMonitorSelectorNilUsesHelmValues: false
             podMonitorSelectorNilUsesHelmValues: false
             ruleSelectorNilUsesHelmValues: false
+            # T25: scrape Argo CD on the mgmt cluster through its NodePorts (platform/argocd-metrics)
+            additionalScrapeConfigs:
+              - job_name: argocd-application-controller
+                static_configs:
+                  - targets: ['k3d-mgmt-server-0:30882']
+              - job_name: argocd-server
+                static_configs:
+                  - targets: ['k3d-mgmt-server-0:30883']
+              - job_name: argocd-repo-server
+                static_configs:
+                  - targets: ['k3d-mgmt-server-0:30884']
             resources:
               requests: { cpu: 100m, memory: 400Mi }
         alertmanager:
           alertmanagerSpec:
             resources:
               requests: { cpu: 10m, memory: 32Mi }
+        # T25: alerts on Argo CD itself
+        additionalPrometheusRulesMap:
+          argocd:
+            groups:
+              - name: argocd
+                rules:
+                  - alert: ArgoCDAppOutOfSync
+                    expr: max by (name, project) (argocd_app_info{sync_status="OutOfSync"}) == 1
+                    for: 15m
+                    labels: { severity: warning }
+                    annotations:
+                      summary: 'Argo CD app {{ $labels.name }} has been OutOfSync for 15 minutes'
+                  - alert: ArgoCDAppDegraded
+                    expr: max by (name, project) (argocd_app_info{health_status="Degraded"}) == 1
+                    for: 5m
+                    labels: { severity: critical }
+                    annotations:
+                      summary: 'Argo CD app {{ $labels.name }} is Degraded'
+                  - alert: ArgoCDMetricsDown
+                    expr: up{job=~"argocd-.*"} == 0
+                    for: 5m
+                    labels: { severity: warning }
+                    annotations:
+                      summary: 'Prometheus cannot scrape {{ $labels.job }} on the mgmt cluster'
         grafana:
+          # T25: official Argo CD dashboard from grafana.com (ID 14584), folder "Lab"
+          dashboardProviders:
+            dashboardproviders.yaml:
+              apiVersion: 1
+              providers:
+                - name: lab
+                  orgId: 1
+                  folder: Lab
+                  type: file
+                  disableDeletion: false
+                  options:
+                    path: /var/lib/grafana/dashboards/lab
+          dashboards:
+            lab:
+              argocd:
+                gnetId: 14584
+                revision: 1
+                datasource: Prometheus
           # T09: credentials come from Vault via the ExternalSecret platform/secret-store/workload/grafana-admin.yaml
           admin:
             existingSecret: grafana-admin
