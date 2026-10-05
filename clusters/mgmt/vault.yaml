@@ -1,0 +1,58 @@
+# T09: HashiCorp Vault on mgmt, single node with integrated Raft storage.
+# Not auto-unsealed: after every restart of the k3d cluster Vault comes up SEALED
+# and must be unsealed by hand (see docs/vault.md). That is the real-world lesson here.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+spec:
+  project: platform
+  source:
+    repoURL: https://helm.releases.hashicorp.com
+    chart: vault
+    targetRevision: 0.34.1
+    helm:
+      releaseName: vault
+      valuesObject:
+        injector:
+          enabled: false        # we use External Secrets Operator instead of the sidecar injector
+        ui:
+          enabled: true
+        server:
+          ha:
+            enabled: true
+            replicas: 1
+            raft:
+              enabled: true
+              setNodeId: true
+          dataStorage:
+            enabled: true
+            size: 1Gi
+          service:
+            # NodePort so ESO on the workload cluster can reach Vault over the shared
+            # docker network: http://k3d-mgmt-server-0:30820
+            type: NodePort
+            nodePort: 30820
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            annotations:
+              cert-manager.io/cluster-issuer: lab-ca
+            hosts:
+              - host: vault.localtest.me
+            tls:
+              - secretName: vault-tls
+                hosts:
+                  - vault.localtest.me
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vault
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

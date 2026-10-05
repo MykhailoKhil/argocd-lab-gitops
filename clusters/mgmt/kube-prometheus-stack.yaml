@@ -39,7 +39,11 @@ spec:
             resources:
               requests: { cpu: 10m, memory: 32Mi }
         grafana:
-          adminPassword: admin   # lab only; moves to a sealed/external secret in T09
+          # T09: credentials come from Vault via the ExternalSecret platform/secret-store/workload/grafana-admin.yaml
+          admin:
+            existingSecret: grafana-admin
+            userKey: admin-user
+            passwordKey: admin-password
           defaultDashboardsTimezone: browser
           ingress:
             enabled: true

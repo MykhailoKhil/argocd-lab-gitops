@@ -1,7 +1,8 @@
 *.kubeconfig
 *.tgz
 .DS_Store
-# never commit plain secrets; use sealed/external secrets (T09)
-*secret*.yaml
-!*sealed*secret*.yaml
+# never commit plain Secret manifests (values live in Vault, T09).
+# Only this exact naming is blocked, so external-secrets / secret-store files are allowed.
+*.secret.yaml
+secret-*.plain.yaml
 *.crt

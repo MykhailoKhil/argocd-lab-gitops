@@ -1,0 +1,28 @@
+# T05 made fully declarative: the Argo CD cluster Secret for "workload" is built from Vault
+# (secret/argocd/clusters/workload: server, bearerToken, caData). Git holds no token.
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: cluster-workload
+  namespace: argocd
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault
+  target:
+    name: cluster-workload
+    creationPolicy: Owner
+    template:
+      metadata:
+        labels:
+          argocd.argoproj.io/secret-type: cluster
+          env: lab
+      data:
+        name: workload
+        server: "{{ .server }}"
+        config: |
+          {"bearerToken":"{{ .bearerToken }}","tlsClientConfig":{"caData":"{{ .caData }}"}}
+  dataFrom:
+    - extract:
+        key: argocd/clusters/workload
