@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - ../../base
   - pdb.yaml   # prod only: keep 2 of 3 pods during node drains / upgrades
+  - hpa.yaml   # prod only: 3..6 replicas on CPU (T18)
 images:
   - name: ghcr.io/mykhailokhil/demo-api
     newTag: sha-68dd077  # changed only by the promote workflow (.github/workflows/promote.yaml)

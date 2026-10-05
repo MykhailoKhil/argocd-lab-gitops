@@ -2,3 +2,5 @@
 cluster: workload
 namespace: demo-dev
 autoSync: true
+# T18: true = an HPA manages replicas, Argo CD ignores spec.replicas of the Rollout
+hpa: false

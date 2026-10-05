@@ -52,3 +52,4 @@ After that, every change goes through git: commit, push, and Argo CD syncs it.
 - [ ] T04 app of apps
 - [ ] T05 workload cluster registered declaratively
 - [ ] T06 ApplicationSet for environments
+- [ ] T18 drift experiments (docs/t18-drift.md)

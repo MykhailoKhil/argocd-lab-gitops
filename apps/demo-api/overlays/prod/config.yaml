@@ -3,3 +3,5 @@ cluster: workload
 namespace: demo-prod
 # T13: merge of a promotion PR is the approval, so prod syncs automatically after merge.
 autoSync: true
+# T18: true = an HPA manages replicas, Argo CD ignores spec.replicas of the Rollout
+hpa: true

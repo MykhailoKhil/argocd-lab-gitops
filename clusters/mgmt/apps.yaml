@@ -36,6 +36,8 @@ spec:
           # Certificate). On a fresh cluster those may not exist yet: don't fail the dry run,
           # retry until the platform catches up.
           - SkipDryRunOnMissingResource=true
+          # T18: ignoreDifferences (below) must also apply during sync, not only in the diff
+          - RespectIgnoreDifferences=true
         retry:
           limit: 10
           backoff:
@@ -44,10 +46,20 @@ spec:
             maxDuration: 5m
   # autoSync comes from overlays/<env>/config.yaml (all envs auto-sync since T13).
   templatePatch: |
-    {{- if .autoSync }}
     spec:
+      project: apps   # always emit something under spec, so the patch is never "spec: null"
+    {{- if .autoSync }}
       syncPolicy:
         automated:
           prune: true
           selfHeal: true
+    {{- end }}
+    {{- if .hpa }}
+      # T18: an HPA owns the replica count; without this Argo CD (selfHeal) and the HPA
+      # would fight forever, resetting each other's spec.replicas.
+      ignoreDifferences:
+        - group: argoproj.io
+          kind: Rollout
+          jsonPointers:
+            - /spec/replicas
     {{- end }}

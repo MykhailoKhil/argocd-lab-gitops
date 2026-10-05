@@ -16,6 +16,9 @@ spec:
   clusterResourceWhitelist:
     - group: ''
       kind: Namespace   # needed for CreateNamespace=true
+  # T18: show resources that live in demo-* namespaces but are not in git (UI: "orphaned")
+  orphanedResources:
+    warn: true
   # T21: sync windows go here, e.g. no prod syncs on Friday evening.
   # syncWindows:
   #   - kind: deny
