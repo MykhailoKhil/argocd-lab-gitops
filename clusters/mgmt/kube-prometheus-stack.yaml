@@ -1,0 +1,57 @@
+# T08: Prometheus + Grafana + Alertmanager on the WORKLOAD cluster.
+# It lives next to the apps on purpose: Argo Rollouts (T14) runs there too and its
+# AnalysisTemplates will query this Prometheus in-cluster.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+spec:
+  project: platform
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: 91.9.0
+    helm:
+      releaseName: kps
+      valuesObject:
+        fullnameOverride: kps
+        # k3s runs these inside the k3s binary; their endpoints are not scrapeable
+        # and would only produce permanently firing "target down" alerts.
+        kubeControllerManager: { enabled: false }
+        kubeScheduler: { enabled: false }
+        kubeProxy: { enabled: false }
+        kubeEtcd: { enabled: false }
+        prometheus:
+          prometheusSpec:
+            retention: 2d
+            # pick up ServiceMonitors/PodMonitors/rules from ANY namespace and ANY label,
+            # not only the ones carrying release=kps
+            serviceMonitorSelectorNilUsesHelmValues: false
+            podMonitorSelectorNilUsesHelmValues: false
+            ruleSelectorNilUsesHelmValues: false
+            resources:
+              requests: { cpu: 100m, memory: 400Mi }
+        alertmanager:
+          alertmanagerSpec:
+            resources:
+              requests: { cpu: 10m, memory: 32Mi }
+        grafana:
+          adminPassword: admin   # lab only; moves to a sealed/external secret in T09
+          defaultDashboardsTimezone: browser
+          sidecar:
+            dashboards:
+              enabled: true
+              searchNamespace: ALL   # ConfigMaps labelled grafana_dashboard=1 in any namespace
+  destination:
+    name: workload
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true   # the Prometheus Operator CRDs exceed the client-side apply annotation limit

@@ -3,7 +3,7 @@
 Cluster add-ons managed by Argo CD. Empty on purpose: filled in during
 
 - T07: cert-manager + self-signed CA (`cert-manager-issuers/`); ingress is the Traefik that ships with k3s
-- T08: kube-prometheus-stack, Loki
+- T08: kube-prometheus-stack on the workload cluster (`clusters/mgmt/kube-prometheus-stack.yaml`); Loki next
 - T09: sealed-secrets or external-secrets
 - T14: Argo Rollouts
 
