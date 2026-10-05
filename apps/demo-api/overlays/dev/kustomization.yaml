@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+images:
+  - name: ghcr.io/mykhailokhil/demo-api
+    newTag: sha-0000000   # dev: bumped by Image Updater (T12); staging/prod: by promotion PR (T13)
+replicas:
+  - name: demo-api
+    count: 1

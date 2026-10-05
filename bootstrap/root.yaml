@@ -1,0 +1,22 @@
+# The only manifest you apply by hand (T04).
+# Everything else is discovered from clusters/mgmt/ in git.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/MykhailoKhil/argocd-lab-gitops.git
+    targetRevision: main
+    path: clusters/mgmt
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,0 +1,19 @@
+# Created by the root app before any Application that uses it.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-20"
+spec:
+  description: Cluster-wide platform components (Argo CD, ingress, cert-manager, monitoring)
+  sourceRepos:
+    - https://github.com/MykhailoKhil/argocd-lab-gitops.git
+    - https://argoproj.github.io/argo-helm
+  destinations:
+    - server: '*'
+      namespace: '*'
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'

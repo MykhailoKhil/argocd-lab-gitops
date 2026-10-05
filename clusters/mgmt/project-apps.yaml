@@ -1,0 +1,24 @@
+# Created by the root app before any Application that uses it.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: apps
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-20"
+spec:
+  description: Application workloads. Namespaced resources only, demo-* namespaces only.
+  sourceRepos:
+    - https://github.com/MykhailoKhil/argocd-lab-gitops.git
+  destinations:
+    - name: '*'
+      namespace: 'demo-*'
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace   # needed for CreateNamespace=true
+  # T21: sync windows go here, e.g. no prod syncs on Friday evening.
+  # syncWindows:
+  #   - kind: deny
+  #     schedule: '0 17 * * 5'
+  #     duration: 63h
+  #     applications: ['*-prod']

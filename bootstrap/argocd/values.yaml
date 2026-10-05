@@ -1,0 +1,29 @@
+# Argo CD Helm values (chart argo/argo-cd).
+# Used twice: by scripts/bootstrap.sh for the first install,
+# and by clusters/mgmt/argocd.yaml so Argo CD then manages itself.
+
+global:
+  domain: argocd.localtest.me
+
+configs:
+  params:
+    # TLS is terminated at the ingress later (T07); plain HTTP inside the cluster for now.
+    server.insecure: true
+  cm:
+    # Track resources by annotation instead of label: avoids clashes with Helm/other tools.
+    application.resourceTrackingMethod: annotation
+    timeout.reconciliation: 60s
+  rbac:
+    policy.default: role:readonly
+
+dex:
+  enabled: false   # SSO comes in T23
+
+notifications:
+  enabled: true    # triggers/templates are configured in T24
+
+applicationSet:
+  replicas: 1
+
+server:
+  replicas: 1

@@ -1,0 +1,43 @@
+# ApplicationSet (T06): one Application per apps/<app>/overlays/<env>/config.yaml.
+# Add a directory with a config.yaml -> a new Application appears. Delete it -> it is removed.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apps
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://github.com/MykhailoKhil/argocd-lab-gitops.git
+        revision: main
+        files:
+          - path: apps/*/overlays/*/config.yaml
+  template:
+    metadata:
+      name: '{{ index .path.segments 1 }}-{{ .path.basename }}'
+      labels:
+        app: '{{ index .path.segments 1 }}'
+        env: '{{ .path.basename }}'
+    spec:
+      project: apps
+      source:
+        repoURL: https://github.com/MykhailoKhil/argocd-lab-gitops.git
+        targetRevision: main
+        path: '{{ .path.path }}'
+      destination:
+        name: '{{ .cluster }}'
+        namespace: '{{ .namespace }}'
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+  # prod is synced manually (promotion via PR, T13); dev and staging auto-sync.
+  templatePatch: |
+    {{- if .autoSync }}
+    spec:
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+    {{- end }}
