@@ -24,9 +24,9 @@ spec:
               containerPort: 8080
           env:
             - name: FAULT_LATENCY_MS   # T17: set > 0 to make a "bad" release
-              value: "0"
+              value: "100"
             - name: FAULT_ERROR_RATE   # T17: 0.0–1.0 share of requests that return 500
-              value: "0"
+              value: "0.5"
           readinessProbe:
             httpGet: { path: /readyz, port: http }
           livenessProbe:
