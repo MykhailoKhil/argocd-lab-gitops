@@ -19,9 +19,24 @@ spec:
   # T18: show resources that live in demo-* namespaces but are not in git (UI: "orphaned")
   orphanedResources:
     warn: true
-  # T21: sync windows go here, e.g. no prod syncs on Friday evening.
-  # syncWindows:
-  #   - kind: deny
-  #     schedule: '0 17 * * 5'
-  #     duration: 63h
-  #     applications: ['*-prod']
+  # T21: sync windows. While a "deny" window is active, Argo CD does not sync matching apps:
+  # no auto-sync, no self-heal; merged commits wait until the window closes.
+  syncWindows:
+    # No prod deploys from Friday 17:00 until Monday 08:00 (Timisoara time).
+    - kind: deny
+      schedule: '0 17 * * 5'
+      duration: 63h
+      timeZone: Europe/Bucharest
+      applications:
+        - '*-prod'
+      manualSync: true       # emergency hotfix: a human may still press Sync
+      description: weekend change freeze for prod
+    # To test now, uncomment, push, and try to sync demo-api-dev. Remove afterwards.
+    # - kind: deny
+    #   schedule: '* * * * *'
+    #   duration: 1h
+    #   timeZone: Europe/Bucharest
+    #   applications:
+    #     - 'demo-api-dev'
+    #   manualSync: false
+    #   description: T21 test window

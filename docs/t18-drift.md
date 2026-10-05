@@ -5,7 +5,8 @@ All experiments run against **dev** unless stated. Keep the Argo CD UI open on `
 "What I broke" section of the main README.
 
 ```bash
-W="--context k3d-workload"
+# works in zsh and bash (a plain W="--context ..." string is not split into words by zsh)
+alias kw='kubectl --context k3d-workload'
 ```
 
 ## 1. Drift + self-heal
@@ -13,8 +14,8 @@ W="--context k3d-workload"
 Someone "fixes" production by hand:
 
 ```bash
-kubectl $W -n demo-dev label svc demo-api-stable hotfix=manual --overwrite
-kubectl $W -n demo-dev get svc demo-api-stable --show-labels -w
+kw -n demo-dev label svc demo-api-stable hotfix=manual --overwrite
+kw -n demo-dev get svc demo-api-stable --show-labels -w
 ```
 
 Expected: the app turns **OutOfSync** for a few seconds, then self-heal removes the label.
@@ -23,7 +24,7 @@ Look at the app's *Events*: `Sync operation ... initiated automatically`.
 Try a change Argo CD does NOT see:
 
 ```bash
-kubectl $W -n demo-dev annotate svc demo-api-stable note=hello
+kw -n demo-dev annotate svc demo-api-stable note=hello
 ```
 
 It stays. Argo CD compares only fields that are in git (plus the last-applied state);
@@ -50,9 +51,9 @@ data:
   hello: world
 YAML
 # add "  - tmp.yaml" under resources in overlays/dev/kustomization.yaml, commit, push
-kubectl $W -n demo-dev get cm prune-me
+kw -n demo-dev get cm prune-me
 # now remove it from kustomization.yaml + delete the file, commit, push
-kubectl $W -n demo-dev get cm prune-me     # gone: prune: true
+kw -n demo-dev get cm prune-me     # gone: prune: true
 ```
 
 Variant: before removing it, annotate it in git with
@@ -62,12 +63,12 @@ it as "requires pruning". Useful for PVCs and other things you never want auto-d
 ## 4. Orphaned resources
 
 ```bash
-kubectl $W -n demo-dev create configmap not-in-git --from-literal=a=b
+kw -n demo-dev create configmap not-in-git --from-literal=a=b
 ```
 
 Not tracked by any app, so Argo CD never deletes it. With `orphanedResources.warn: true` in the
 `apps` AppProject the app shows an **OrphanedResourceWarning**. Clean up:
-`kubectl $W -n demo-dev delete cm not-in-git`.
+`kw -n demo-dev delete cm not-in-git`.
 
 ## 5. HPA vs Argo CD (prod)
 
@@ -76,14 +77,14 @@ adds `ignoreDifferences` for the Rollout's `/spec/replicas`.
 
 ```bash
 # push CPU up: raise the k6 rate in prod (or use 'kubectl set env', then let self-heal undo it)
-kubectl $W -n demo-prod set env deploy/k6-load RATE=200
-kubectl $W -n demo-prod get hpa demo-api -w
+kw -n demo-prod set env deploy/k6-load RATE=200
+kw -n demo-prod get hpa demo-api -w
 ```
 
 Expected: replicas grow above 3, the app stays **Synced**.
 
 Now see the fight: remove `hpa: true` (set it to `false`) in `overlays/prod/config.yaml`, push,
-and watch `kubectl $W -n demo-prod get rollout demo-api -w`: the HPA scales up, self-heal sets
+and watch `kw -n demo-prod get rollout demo-api -w`: the HPA scales up, self-heal sets
 replicas back to 3, repeat. Restore `hpa: true` when done.
 
 Note: the `set env` above is itself drift; self-heal reverts RATE to 10 within seconds. To keep
