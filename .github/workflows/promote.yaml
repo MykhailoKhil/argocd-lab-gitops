@@ -1,0 +1,78 @@
+# T13: promote an image from one environment to the next by pull request.
+# Actions → promote → Run workflow → pick source and target.
+# The workflow copies the image tag from overlays/<source> to overlays/<target> on a new
+# branch and opens a PR. Merging the PR is the deployment: Argo CD syncs it.
+name: promote
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Take the image tag from
+        type: choice
+        options: [dev, staging]
+        default: dev
+      target:
+        description: Promote to
+        type: choice
+        options: [staging, prod]
+        default: prod
+      app:
+        description: Application folder under apps/
+        default: demo-api
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read and write the tag
+        id: tag
+        env:
+          APP: ${{ inputs.app }}
+          SRC: ${{ inputs.source }}
+          DST: ${{ inputs.target }}
+        run: |
+          set -euo pipefail
+          src="apps/$APP/overlays/$SRC/kustomization.yaml"
+          dst="apps/$APP/overlays/$DST/kustomization.yaml"
+          [ "$SRC" != "$DST" ] || { echo "::error::source and target are the same"; exit 1; }
+          for f in "$src" "$dst"; do [ -f "$f" ] || { echo "::error::$f not found"; exit 1; }; done
+
+          new=$(yq '.images[0].newTag' "$src")
+          old=$(yq '.images[0].newTag' "$dst")
+          echo "new=$new" >> "$GITHUB_OUTPUT"
+          echo "old=$old" >> "$GITHUB_OUTPUT"
+          if [ "$new" = "$old" ]; then
+            echo "::notice::$DST already runs $new, nothing to promote"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          yq -i ".images[0].newTag = \"$new\"" "$dst"
+          git diff
+
+      - name: Open pull request
+        if: steps.tag.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APP: ${{ inputs.app }}
+          SRC: ${{ inputs.source }}
+          DST: ${{ inputs.target }}
+          NEW: ${{ steps.tag.outputs.new }}
+          OLD: ${{ steps.tag.outputs.old }}
+        run: |
+          set -euo pipefail
+          branch="promote/$APP-$DST-$NEW"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git commit -am "promote($APP): $DST $OLD -> $NEW"
+          git push -u origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "promote($APP): $DST $OLD -> $NEW" \
+            --body "$(printf 'Promote **%s** from `%s` to `%s`.\n\n| | tag |\n|---|---|\n| before | `%s` |\n| after | `%s` |\n\nMerging deploys it: Argo CD syncs `%s-%s`.\n\nImage: `ghcr.io/mykhailokhil/%s:%s`' "$APP" "$SRC" "$DST" "$OLD" "$NEW" "$APP" "$DST" "$APP" "$NEW")"

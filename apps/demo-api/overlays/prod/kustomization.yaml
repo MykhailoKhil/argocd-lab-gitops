@@ -5,7 +5,7 @@ resources:
   - pdb.yaml   # prod only: keep 2 of 3 pods during node drains / upgrades
 images:
   - name: ghcr.io/mykhailokhil/demo-api
-    newTag: sha-68dd077  # dev: Image Updater (T12); staging/prod: promotion PR (T13)
+    newTag: sha-68dd077  # changed only by the promote workflow (.github/workflows/promote.yaml)
 replicas:
   - name: demo-api
     count: 3

@@ -1,0 +1,23 @@
+# Every PR (promotions included) must render. Make this a required status check on main.
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  kustomize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Render every overlay
+        run: |
+          set -euo pipefail
+          for d in apps/*/overlays/*/ platform/*/ platform/*/*/; do
+            [ -f "$d/kustomization.yaml" ] || continue
+            echo "::group::$d"
+            kubectl kustomize "$d" > /dev/null
+            echo "ok"
+            echo "::endgroup::"
+          done

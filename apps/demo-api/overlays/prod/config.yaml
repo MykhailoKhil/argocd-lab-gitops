@@ -1,4 +1,5 @@
 # Read by the ApplicationSet in clusters/mgmt/apps.yaml (not a Kubernetes manifest).
 cluster: workload
 namespace: demo-prod
-autoSync: false
+# T13: merge of a promotion PR is the approval, so prod syncs automatically after merge.
+autoSync: true
