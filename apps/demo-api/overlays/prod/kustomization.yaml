@@ -6,26 +6,31 @@ resources:
 images:
   - name: ghcr.io/mykhailokhil/demo-api
     newTag: sha-68dd077  # changed only by the promote workflow (.github/workflows/promote.yaml)
-replicas:
-  - name: demo-api
-    count: 3
 patches:
+  # kustomize's "replicas:" field doesn't support the Rollout kind, so patch it
   - target:
-      kind: Ingress
+      kind: Rollout
       name: demo-api
     patch: |-
       - op: replace
-        path: /spec/rules/0/host
-        value: demo.localtest.me
-      - op: replace
-        path: /spec/tls/0/hosts/0
-        value: demo.localtest.me
-  - target:
-      kind: Deployment
-      name: demo-api
-    patch: |-
+        path: /spec/replicas
+        value: 3
       - op: replace
         path: /spec/template/spec/containers/0/resources
         value:
           requests: { cpu: 100m, memory: 64Mi }
           limits: { memory: 128Mi }
+  - target:
+      kind: IngressRoute
+      name: demo-api
+    patch: |-
+      - op: replace
+        path: /spec/routes/0/match
+        value: Host(`demo.localtest.me`)
+  - target:
+      kind: Certificate
+      name: demo-api
+    patch: |-
+      - op: replace
+        path: /spec/dnsNames/0
+        value: demo.localtest.me

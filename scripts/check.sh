@@ -36,7 +36,7 @@ notok=$(kubectl --context $WL get pods -A --no-headers 2>/dev/null | awk '$4!="R
 [[ -z "$notok" ]] && ok "all pods Running" || { bad "some pods are unhealthy:"; echo "$notok"; }
 
 section "5. demo-api responds (workload, demo-dev)"
-kubectl --context $WL -n demo-dev port-forward svc/demo-api 18082:80 >/dev/null 2>&1 & PF1=$!
+kubectl --context $WL -n demo-dev port-forward svc/demo-api-stable 18082:80 >/dev/null 2>&1 & PF1=$!
 sleep 3
 resp=$(curl -s --max-time 5 localhost:18082/)
 [[ "$resp" == *version* ]] && ok "GET / -> $resp" || bad "demo-api did not answer"

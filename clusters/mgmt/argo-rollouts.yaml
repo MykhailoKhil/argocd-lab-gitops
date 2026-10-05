@@ -1,0 +1,35 @@
+# T14: Argo Rollouts controller on the WORKLOAD cluster (Rollouts must run where the Rollouts are).
+# Traffic is split by Traefik (built into k3s, Traefik v3 -> traefik.io API, the Rollouts default).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argo-rollouts
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+spec:
+  project: platform
+  source:
+    repoURL: https://argoproj.github.io/argo-helm
+    chart: argo-rollouts
+    targetRevision: 2.43.5
+    helm:
+      releaseName: argo-rollouts
+      valuesObject:
+        dashboard:
+          enabled: true        # kubectl -n argo-rollouts port-forward svc/argo-rollouts-dashboard 3100:3100
+        controller:
+          metrics:
+            enabled: true
+            serviceMonitor:
+              enabled: true    # scraped by kube-prometheus-stack (T08)
+  destination:
+    name: workload
+    namespace: argo-rollouts
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

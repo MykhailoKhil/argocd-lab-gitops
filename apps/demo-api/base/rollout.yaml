@@ -1,0 +1,57 @@
+# T14: a Rollout instead of a Deployment. Same pod template, plus a canary strategy.
+# Kustomize's label/replica transformers don't know the Rollout kind, so selector and
+# template labels are written out here, and overlays patch replicas directly.
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: demo-api
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: demo-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: demo-api
+    spec:
+      containers:
+        - name: demo-api
+          image: ghcr.io/mykhailokhil/demo-api:latest  # overridden per env via kustomize images
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: FAULT_LATENCY_MS   # T17: set > 0 to make a "bad" release
+              value: "0"
+            - name: FAULT_ERROR_RATE   # T17: 0.0–1.0 share of requests that return 500
+              value: "0"
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits: { memory: 64Mi }
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+  strategy:
+    canary:
+      # Rollouts points these Services at the stable / canary ReplicaSets
+      stableService: demo-api-stable
+      canaryService: demo-api-canary
+      # ...and sets the weights in this TraefikService
+      trafficRouting:
+        traefik:
+          weightedTraefikServiceName: demo-api
+      steps:
+        - setWeight: 20
+        - pause: { duration: 60s }
+        - setWeight: 50
+        - pause: { duration: 60s }
+        - setWeight: 80
+        - pause: { duration: 30s }
+      # T15: analysis (Prometheus error rate + p95 latency) is added here

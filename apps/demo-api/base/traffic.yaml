@@ -1,0 +1,42 @@
+# Traefik routing: IngressRoute -> weighted TraefikService -> stable / canary Services.
+# No "weight" fields on purpose: Argo Rollouts owns them, so Argo CD sees no drift.
+apiVersion: traefik.io/v1alpha1
+kind: TraefikService
+metadata:
+  name: demo-api
+spec:
+  weighted:
+    services:
+      - name: demo-api-stable
+        port: 80
+      - name: demo-api-canary
+        port: 80
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: demo-api
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`PATCH-ME.localtest.me`)   # patched per overlay
+      services:
+        - name: demo-api
+          kind: TraefikService
+  tls:
+    secretName: demo-api-tls
+---
+# IngressRoute has no cert-manager annotation support, so the Certificate is explicit.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: demo-api
+spec:
+  secretName: demo-api-tls
+  dnsNames:
+    - PATCH-ME.localtest.me                  # patched per overlay
+  issuerRef:
+    kind: ClusterIssuer
+    name: lab-ca
