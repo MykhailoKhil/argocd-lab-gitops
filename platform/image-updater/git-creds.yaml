@@ -1,0 +1,18 @@
+# GitHub fine-grained PAT that may push to argocd-lab-gitops (Contents: read & write).
+# Lives in Vault at secret/argocd/image-updater-git (username, password).
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: git-creds
+  namespace: argocd
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault
+  target:
+    name: git-creds
+    creationPolicy: Owner
+  dataFrom:
+    - extract:
+        key: argocd/image-updater-git

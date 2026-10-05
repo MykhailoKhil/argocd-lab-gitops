@@ -4,7 +4,7 @@ resources:
   - ../../base
 images:
   - name: ghcr.io/mykhailokhil/demo-api
-    newTag: sha-68dd077  # dev: Image Updater (T12); staging/prod: promotion PR (T13)
+    newTag: sha-68dd077  # updated automatically by Argo CD Image Updater (platform/image-updater)
 replicas:
   - name: demo-api
     count: 1

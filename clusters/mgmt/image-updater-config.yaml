@@ -1,0 +1,30 @@
+# T12: ImageUpdater CRs + the git credentials (from Vault) Image Updater uses to push commits.
+# Both are custom resources whose CRDs come from other apps: SkipDryRunOnMissingResource + retry.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: image-updater-config
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/MykhailoKhil/argocd-lab-gitops.git
+    targetRevision: main
+    path: platform/image-updater
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

@@ -82,3 +82,14 @@ Vault UI: https://vault.localtest.me:8443 (through the mgmt Traefik port-forward
 
 - Kubernetes auth instead of a static token (no "secret zero").
 - Rotate the Grafana password in Vault and watch ESO update the Secret (refreshInterval 1h, or annotate the ExternalSecret with `force-sync=$(date +%s)`).
+
+## T12: git credentials for Image Updater
+
+Create a GitHub fine-grained token: Settings → Developer settings → Fine-grained tokens →
+repository access *only* `argocd-lab-gitops`, permission **Contents: Read and write**. Then:
+
+```bash
+v kv put secret/argocd/image-updater-git username=MykhailoKhil password=<github_pat_...>
+```
+
+ESO turns it into Secret `argocd/git-creds` (platform/image-updater/git-creds.yaml).

@@ -1,0 +1,27 @@
+# T12: Argo CD Image Updater. Watches GHCR for new demo-api images and commits the new tag
+# to git (write-back), so git stays the source of truth. What to watch is configured
+# with ImageUpdater custom resources in platform/image-updater/.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-image-updater
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+spec:
+  project: platform
+  source:
+    repoURL: https://argoproj.github.io/argo-helm
+    chart: argocd-image-updater
+    targetRevision: 1.3.1
+    helm:
+      releaseName: argocd-image-updater
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true

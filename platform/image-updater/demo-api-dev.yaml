@@ -1,0 +1,28 @@
+# Only dev follows every new build automatically.
+# staging and prod are promoted by pull request (T13), never by Image Updater.
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: demo-api-dev
+  namespace: argocd
+spec:
+  writeBackConfig:
+    # commit to git with the PAT from Secret argocd/git-creds
+    method: git:secret:argocd/git-creds
+    gitConfig:
+      repository: https://github.com/MykhailoKhil/argocd-lab-gitops.git
+      branch: main
+      # edit images[].newTag in the app's own kustomization.yaml (apps/demo-api/overlays/dev)
+      writeBackTarget: kustomization
+  applicationRefs:
+    - namePattern: demo-api-dev
+      images:
+        - alias: demo-api
+          imageName: ghcr.io/mykhailokhil/demo-api
+          commonUpdateSettings:
+            # sha-<short> tags have no order of their own: pick the most recently built image
+            updateStrategy: newest-build
+            allowTags: regexp:^sha-[0-9a-f]{7}$
+          manifestTargets:
+            kustomize:
+              name: ghcr.io/mykhailokhil/demo-api
