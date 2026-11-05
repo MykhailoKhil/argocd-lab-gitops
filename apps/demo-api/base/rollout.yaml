@@ -21,6 +21,10 @@ spec:
       labels:
         app.kubernetes.io/name: demo-api
     spec:
+      # Neither workload calls the Kubernetes API, so no ServiceAccount token is needed.
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile: { type: RuntimeDefault }
       containers:
         - name: demo-api
           image: ghcr.io/mykhailokhil/demo-api:latest  # overridden per env via kustomize images
@@ -42,6 +46,7 @@ spec:
           securityContext:
             runAsNonRoot: true
             allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
             readOnlyRootFilesystem: true
   strategy:
     canary:
