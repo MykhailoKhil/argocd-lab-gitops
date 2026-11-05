@@ -64,6 +64,9 @@ spec:
         lokiCanary: { enabled: false }
         test: { enabled: false }
         minio: { enabled: false }
+        sidecar:
+          image:
+            tag: 2.14.3   # was chart default 2.11.2: clears CRITICAL certifi advisory GHSA-6q48-6c7w-9gw2
   destination:
     name: workload
     namespace: monitoring

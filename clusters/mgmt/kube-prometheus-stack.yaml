@@ -116,6 +116,8 @@ spec:
               url: http://loki-gateway.monitoring.svc
               access: proxy
           sidecar:
+            image:
+              tag: 2.14.3   # was chart default 2.11.2: clears CRITICAL certifi advisory GHSA-6q48-6c7w-9gw2
             dashboards:
               enabled: true
               searchNamespace: ALL   # ConfigMaps labelled grafana_dashboard=1 in any namespace
