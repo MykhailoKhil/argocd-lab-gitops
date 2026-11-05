@@ -30,6 +30,11 @@ spec:
         name: '{{ .cluster }}'
         namespace: '{{ .namespace }}'
       syncPolicy:
+        # Pod Security Admission in non-blocking modes: violations are logged/warned, never rejected.
+        managedNamespaceMetadata:
+          labels:
+            pod-security.kubernetes.io/warn: baseline
+            pod-security.kubernetes.io/audit: baseline
         syncOptions:
           - CreateNamespace=true
           # Apps use CRDs installed by platform apps (Rollout, TraefikService, PodMonitor,
